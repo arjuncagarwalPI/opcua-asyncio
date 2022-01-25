@@ -9,27 +9,34 @@ _logger = logging.getLogger('asyncua')
 
 
 async def main():
-    #url = 'opc.tcp://localhost:4840/freeopcua/server/'
     url = 'opc.tcp://192.168.250.1:4840/'
-    #url = 'opc.tcp://commsvr.com:51234/UA/CAS_UA_Server'
     async with Client(url=url) as client:
         # Client has a few methods to get proxy to UA nodes that should always be in address space such as Root or Objects
         # Node objects have methods to read and write node attributes as well as browse or populate address space
         keepSessionAlive:  True
+        
         _logger.info('Children of root are: %r', await client.nodes.root.get_children())
+        _logger.info("Objects node is: %r", client.nodes.root)
+        
+        print()
 
-        uri = 'http://examples.freeopcua.github.io'
-        idx = await client.get_namespace_index(url)
-        # get a specific node knowing its node id
-        # var = client.get_node(ua.NodeId(1002, 2))
-        # var = client.get_node("ns=3;i=2002")
-        var = await client.nodes.root.get_child(["0:Objects", f"{idx}:MyObject", f"{idx}:MyVariable"])
-        print("My variable", var, await var.read_value())
-        # print(var)
-        # await var.read_data_value() # get value of node as a DataValue object
-        # await var.read_value() # get value of node as a python builtin
-        # await var.write_value(ua.Variant([23], ua.VariantType.Int64)) #set node value using explicit data type
-        # await var.write_value(3.9) # set node value using implicit data type
+        arr = await client.get_namespace_array()
+        print("arr:\n", arr)
+
+        node = client.get_node(ua.NodeId(ua.ObjectIds.Server_ServerStatus_State))
+        print("\nnode:\n", node)
+
+        root = client.get_root_node()
+        print("\nroot:\n", await root.get_children())
+
+        print()
+ 
+        # change the s=value as desired
+        var1node = client.get_node("ns=4;s=READ_DATA_VALUES")
+        var1val = await var1node.get_value()
+        print("\nvar1val:\n", var1val)
+        print()
+
 
 if __name__ == '__main__':
     asyncio.run(main())
