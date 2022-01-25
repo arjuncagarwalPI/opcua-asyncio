@@ -1,11 +1,9 @@
 import asyncio
-import sys
-# sys.path.insert(0, "..")
-import logging
-from asyncua import Client, Node, ua
+import time
+from asyncua import Client
 
-logging.basicConfig(level=logging.INFO)
-_logger = logging.getLogger('asyncua')
+#logging.basicConfig(level=logging.INFO)
+#_logger = logging.getLogger('asyncua')
 
 
 async def main():
@@ -13,29 +11,45 @@ async def main():
     async with Client(url=url) as client:
         # Client has a few methods to get proxy to UA nodes that should always be in address space such as Root or Objects
         # Node objects have methods to read and write node attributes as well as browse or populate address space
-        keepSessionAlive:  True
-        
-        _logger.info('Children of root are: %r', await client.nodes.root.get_children())
-        _logger.info("Objects node is: %r", client.nodes.root)
-        
-        print()
+        start_time = time.time()
+        for i in range(100):
+            keepSessionAlive:  True
+            #_logger.info('Children of root are: %r', await client.nodes.root.get_children())
+            #_logger.info("Objects node is: %r", client.nodes.root)
 
-        arr = await client.get_namespace_array()
-        print("arr:\n", arr)
+            '''print()
 
-        node = client.get_node(ua.NodeId(ua.ObjectIds.Server_ServerStatus_State))
-        print("\nnode:\n", node)
+            arr = await client.get_namespace_array()
+            print("arr:\n", arr)
 
-        root = client.get_root_node()
-        print("\nroot:\n", await root.get_children())
+            node = client.get_node(ua.NodeId(ua.ObjectIds.Server_ServerStatus_State))
+            print("\nnode:\n", node)
 
-        print()
- 
-        # change the s=value as desired
-        var1node = client.get_node("ns=4;s=READ_DATA_VALUES")
-        var1val = await var1node.get_value()
-        print("\nvar1val:\n", var1val)
-        print()
+            root = client.get_root_node()
+            print("\nroot:\n", await root.get_children())
+
+            print()'''
+    
+            # change the s=value as desired
+            #names_1_node = client.get_node("ns=4;s=READ_DATA_NAMES_1")
+            #names_1_val = await names_1_node.get_value()
+            #print("\nREAD_DATA_NAMES_1:\n", names_1_val)
+            #print()
+            #names_2_node = client.get_node("ns=4;s=READ_DATA_NAMES_2")
+            #names_2_val = await names_2_node.get_value()
+            #print("\nREAD_DATA_NAMES_2:\n", names_2_val)
+            #print()
+            #units_node = client.get_node("ns=4;s=READ_DATA_UNITS")
+            #units_val = await units_node.get_value()
+            #print("\nREAD_DATA_UNITS:\n", units_val)
+            #print()
+            values_node = client.get_node("ns=4;s=READ_DATA_VALUES")
+            values_val = await values_node.get_value()
+            print("\nREAD_DATA_VALUES:\n", values_val)
+            #print()
+            #print('\nTime:', time.time())
+            print('Time elapsed:', time.time() - start_time)
+            #print()
 
 
 if __name__ == '__main__':
