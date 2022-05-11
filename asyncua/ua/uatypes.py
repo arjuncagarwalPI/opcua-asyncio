@@ -30,7 +30,7 @@ if sys.version_info.minor < 10:
             return res
         return ()
 else:
-    from typing import get_origin, get_args
+    from typing import get_origin, get_args  # type: ignore
 
 
 from asyncua.ua import status_codes
@@ -52,36 +52,48 @@ def type_is_union(uatype):
 def type_is_list(uatype):
     return get_origin(uatype) == list
 
+def type_allow_subclass(uatype):
+    return get_origin(uatype) not in [Union, list, None]
 
-def type_from_union(uatype, origin=None):
+def types_from_union(uatype, origin=None):
     if origin is None:
         origin = get_origin(uatype)
     if origin != Union:
         raise ValueError(f"{uatype} is not an Union")
     # need to find out what real type is
-    for subtype in get_args(uatype):
-        if subtype is not None.__class__:  # FIXME: strange comparison...
-            return subtype
-    raise ValueError(f"Union {uatype} does not seem to contain a valid type")
+    types = list(filter(lambda subtype: not isinstance(None, subtype), get_args(uatype)))
+    if not types:
+        raise ValueError(f"Union {uatype} does not seem to contain a valid type")
+    return types
 
 
 def type_from_list(uatype):
     return get_args(uatype)[0]
 
+def type_from_allow_subtype(uatype):
+    return get_args(uatype)[0]
 
 def type_string_from_type(uatype):
     if type_is_union(uatype):
-        uatype = type_from_union(uatype)
+        uatype = types_from_union(uatype)[0]
     elif type_is_list(uatype):
         uatype = type_from_list(uatype)
+    elif type_allow_subclass(uatype):
+        uatype = type_from_allow_subtype(uatype)
     return uatype.__name__
 
 
-class SByte(bytes):
+@dataclass
+class UaUnion:
+    ''' class to identify unions '''
     pass
 
 
-class Byte(bytes):
+class SByte(int):
+    pass
+
+
+class Byte(int):
     pass
 
 
@@ -311,8 +323,6 @@ class StatusCode:
     def check(self):
         """
         Raises an exception if the status code is anything else than 0 (good).
-
-        Use the is_good() method if you do not want an exception.
         """
         if not self.is_good():
             raise UaStatusCodeError(self.value)

@@ -98,7 +98,7 @@ A set of command line tools also available: https://github.com/FreeOpcUa/opcua-a
 * `uacall `(call method of a node)
 * `uasubscribe `(subscribe to a node and print datachange events)
 * `uaclient `(connect to server and start python shell)
-* `uaserver `(starts a demo OPC UA server)  
+* `uaserver `(starts a demo OPC UA server)
   `tools/uaserver --populate --certificate cert.pem --private_key pk.pem`
 
 How to generate certificate: https://github.com/FreeOpcUa/opcua-asyncio/tree/master/examples/generate_certificate.sh
@@ -196,11 +196,21 @@ All protocol code is under opcua directory
 ## Running tests:
 
 ```
+python -m pip install -r requirements.txt
+python -m pip install -r dev_requirements.txt
 pytest -v -s
+```
+Or
+```
+./run-test.sh -v -s
 ```
 
 ## Coverage
 
 ```
 pytest -v -s --cov asyncua --cov-report=html
+```
+Or
+```
+./run-test.sh -v -s --cov asyncua --cov-report=html
 ```

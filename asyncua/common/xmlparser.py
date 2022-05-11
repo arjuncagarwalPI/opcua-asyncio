@@ -65,6 +65,7 @@ class NodeData:
 
         # datatype
         self.definitions = []
+        self.struct_type = ""
 
     def __str__(self):
         return f"NodeData(nodeid:{self.nodeid})"
@@ -208,7 +209,7 @@ class XMLParser:
         elif key == "ArrayDimensions":
             obj.dimensions = [int(i) for i in val.split(",")]
         elif key == "MinimumSamplingInterval":
-            obj.minsample = int(val)
+            obj.minsample = float(val)
         elif key == "AccessLevel":
             obj.accesslevel = int(val)
         elif key == "UserAccessLevel":
@@ -232,6 +233,10 @@ class XMLParser:
         elif tag == "InverseName":
             obj.inversename = el.text
         elif tag == "Definition":
+            if el.attrib.get("IsUnion", False):
+                obj.struct_type = "IsUnion"
+            elif el.attrib.get("IsOptional", False):
+                obj.struct_type = "IsOptional"
             for field in el:
                 field = self._parse_field(field)
                 obj.definitions.append(field)

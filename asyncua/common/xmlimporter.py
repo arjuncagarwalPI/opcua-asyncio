@@ -4,16 +4,18 @@ format is the one from opc-ua specification
 """
 import logging
 import uuid
-from typing import Union, Dict
+from typing import Union, Dict, List
 from dataclasses import fields, is_dataclass
 
 from asyncua import ua
-from asyncua.ua.uatypes import type_is_union, type_from_union, type_is_list, type_from_list
+from asyncua.ua.uatypes import type_is_union, types_from_union, type_is_list, type_from_list
 from .xmlparser import XMLParser, ua_type_to_python
 from ..ua.uaerrors import UaError
 
 _logger = logging.getLogger(__name__)
 
+def _parse_version(version_string: str) -> List[int]:
+    return [int(v) for v in version_string.split('.')]
 
 class XmlImporter:
     def __init__(self, server):
@@ -70,7 +72,7 @@ class XmlImporter:
             for req_model in req_models:
                 if (model["ModelUri"] == req_model["ModelUri"] and model["PublicationDate"] >= req_model["PublicationDate"]):
                     if "Version" in model and "Version" in req_model:
-                        if model["Version"] >= req_model["Version"]:
+                        if _parse_version(model["Version"]) >= _parse_version(req_model["Version"]):
                             req_models.remove(req_model)
                     else:
                         req_models.remove(req_model)
@@ -275,7 +277,7 @@ class XmlImporter:
             node.RequestedNewNodeId)
         return node
 
-    def _to_migrated_nodeid(self, nodeid: Union[ua.NodeId, None, str]) -> ua.NodeId:
+    def _to_migrated_nodeid(self, nodeid: Union[ua.NodeId, None, str]) -> Union[ua.NodeId, ua.QualifiedName]:
         nodeid = self._to_nodeid(nodeid)
         return self._migrate_ns(nodeid)
 
@@ -385,7 +387,7 @@ class XmlImporter:
         # either we get value directly
         # or a dict if it s an object or a list
         if type_is_union(atttype):
-            atttype = type_from_union(atttype)
+            atttype = types_from_union(atttype)[0]
         if isinstance(val, str):
             pval = ua_type_to_python(val, atttype.__name__)
             fargs[attname] = pval
@@ -596,10 +598,15 @@ class XmlImporter:
             f.IsOptional = field.optional
             if f.IsOptional:
                 optional = True
-            f.ArrayDimensions = field.arraydim
+            if field.arraydim is None:
+                f.ArrayDimensions = field.arraydim
+            else:
+                f.ArrayDimensions = [int(i) for i in field.arraydim.split(",")]
             f.Description = ua.LocalizedText(Text=field.desc)
             sdef.Fields.append(f)
-        if optional:
+        if obj.struct_type == "IsUnion":
+            sdef.StructureType = ua.StructureType.Union
+        elif optional or obj.struct_type == "IsOptional":
             sdef.StructureType = ua.StructureType.StructureWithOptionalFields
         else:
             sdef.StructureType = ua.StructureType.Structure

@@ -10,7 +10,7 @@ from struct import unpack_from
 import os
 import logging
 from urllib.parse import urlparse
-from typing import Coroutine
+from typing import Coroutine, Tuple
 
 from asyncua import ua
 from .user_managers import PermissiveUserManager, UserManager
@@ -72,7 +72,8 @@ class InternalServer:
         self.current_time_node = Node(self.isession, ua.NodeId(ua.ObjectIds.Server_ServerStatus_CurrentTime))
         self.time_task = None
         self._time_task_stop = False
-        self.match_discovery_source_ip: bool = True 
+        self.match_discovery_source_ip: bool = True
+        self.supported_tokens = []
 
     async def init(self, shelffile=None):
         await self.load_standard_address_space(shelffile)
@@ -133,7 +134,7 @@ class InternalServer:
             # path was supplied, but file doesn't exist - create one for next start up
             await asyncio.get_running_loop().run_in_executor(None, self.aspace.make_aspace_shelf, shelf_file)
 
-    async def _address_space_fixes(self) -> Coroutine:
+    async def _address_space_fixes(self) -> Coroutine:  # type: ignore
         """
         Looks like the xml definition of address space has some error. This is a good place to fix them
         """

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-import collections
+import collections.abc
+import dataclasses
 import logging
 import pickle
 import shelve
@@ -642,7 +643,7 @@ class AddressSpace:
             self._nodeid_counter[idx] += 1
         else:
             # get the biggest identifier number from the existed nodes in address space
-            identifier_list = sorted(
+            identifier_list = sorted(  # type: ignore
                 [
                     nodeid.Identifier
                     for nodeid in self._nodes.keys()
@@ -718,7 +719,7 @@ class AddressSpace:
         raise NotImplementedError
 
         # ToDo: async friendly implementation - load all at once?
-        class LazyLoadingDict(collections.MutableMapping):
+        class LazyLoadingDict(collections.abc.MutableMapping):
             """
             Special dict that only loads nodes as they are accessed. If a node is accessed it gets copied from the
             shelve to the cache dict. All user nodes are saved in the cache ONLY. Saving data back to the shelf
@@ -780,8 +781,12 @@ class AddressSpace:
         attval = node.attributes.get(attr, None)
         if attval is None:
             return ua.StatusCode(ua.StatusCodes.BadAttributeIdInvalid)
-
-        if not self._is_expected_variant_type(value, attval, node):
+        if value.StatusCode is not None and not value.StatusCode.is_good():
+            # https://reference.opcfoundation.org/v104/Core/docs/Part4/7.7.1/
+            # If the StatusCode indicates an error then the value is to be ignored and the Server shall set it to null.
+            value = dataclasses.replace(value, Value=ua.Variant(ua.Null(), ua.VariantType.Null))
+        elif not self._is_expected_variant_type(value, attval, node):
+            # Only check datatype if no bad StatusCode is set
             return ua.StatusCode(ua.StatusCodes.BadTypeMismatch)
 
         old = attval.value

@@ -87,9 +87,16 @@ class InternalSession:
         self.state = SessionState.Activated
         InternalSession._current_connections += 1
         id_token = params.UserIdentityToken
+        # Check if security policy is supported
+        if not isinstance(id_token, self.iserver.supported_tokens):
+            self.logger.error('Rejected active session UserIdentityToken not supported')
+            raise ServiceError(ua.StatusCodes.BadIdentityTokenRejected)
         if self.iserver.user_manager is not None:
             if isinstance(id_token, ua.UserNameIdentityToken):
                 username, password = self.iserver.check_user_token(self, id_token)
+            elif isinstance(id_token, ua.X509IdentityToken):
+                peer_certificate = id_token.CertificateData
+                username, password = None, None
             else:
                 username, password = None, None
 

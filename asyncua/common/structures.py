@@ -83,13 +83,15 @@ class {self.name}:
 
 """
         for sfield in self.fields:
-            uatype = f"ua.{sfield.uatype}"
+            uatype = f"'ua.{sfield.uatype}'"
             if sfield.array:
                 uatype = f"List[{uatype}]"
             if uatype == 'List[ua.Char]':
                 uatype = 'String'
-            code += f"    {sfield.name}:{uatype} = {sfield.value}\n"
-        print(code)
+            uavalue = sfield.value
+            if isinstance(uavalue, str) and uavalue.startswith("ua."):
+                uavalue = f"field(default_factory=lambda: {uavalue})"
+            code += f"    {sfield.name}:{uatype} = {uavalue}\n"
         return code
 
 
@@ -169,6 +171,8 @@ class StructGenerator(object):
     def _make_registration(self):
         code = "\n\n"
         for struct in self.model:
+            if isinstance(struct, EnumType):
+                continue  # No registration required for enums
             code += f"ua.register_extension_object('{struct.name}'," \
                     f" ua.NodeId.from_string('{struct.typeid}'), {struct.name})\n"
         return code
@@ -186,6 +190,7 @@ from datetime import datetime
 import uuid
 from dataclasses import dataclass, field
 from typing import List, Union
+from enum import IntEnum
 
 from asyncua import ua
 """)
